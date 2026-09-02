@@ -71,7 +71,89 @@ static void locate_block_device (enum block_type, const char *name);
 #endif
 
 int pintos_init (void) NO_RETURN;
+//read line function
+static void
+read_line (char *line, size_t size)
+{
+  size_t i = 0;
+  while (i < size - 1)
+    {
+      uint8_t c = input_getc ();
+      
+      /* Handle Enter / Return key */
+      if (c == '\r' || c == '\n')
+        {
+          putchar ('\n');
+          break;
+        }
+      /* Handle Backspace key */
+      //ascii 127 is delete key
+      else if (c == '\b' || c == 127)
+        {
+          if (i > 0)
+            {
+              i--;
+              printf ("\b \b");
+            }
+        }
+      else
+        {
+          line[i++] = c;
+          putchar (c);
+        }
+    }
+  line[i] = '\0';
+}
+//shell commands new
+static void
+run_shell (void)
+{
+  char line[128];
 
+  while (true)
+    {
+      printf ("CS2043> ");
+      read_line (line, sizeof line);
+
+      /* Ignore empty lines */
+      if (line[0] == '\0')
+        continue;
+
+      if (!strcmp (line, "whoami"))
+        {
+          printf ("Pasindu_Karunarathna-240331F\n");
+        }
+      else if (!strcmp (line, "shutdown"))
+        {
+          shutdown_power_off ();
+        }
+      else if (!strcmp (line, "time"))
+        {
+          printf ("%lu s\n", rtc_get_time ());
+        }
+      else if (!strcmp (line, "ram"))
+        {
+          printf ("%"PRIu32" kB RAM available\n", init_ram_pages * PGSIZE / 1024);
+        }
+      else if (!strcmp (line, "thread"))
+        {
+          thread_print_stats ();
+        }
+      else if (!strcmp (line, "priority"))
+        {
+          printf ("%d\n", thread_get_priority ());
+        }
+      else if (!strcmp (line, "exit"))
+        {
+          printf ("Exiting interactive shell... Bye!\n");
+          break;
+        }
+      else
+        {
+          printf ("Unknown command: %s\n", line);
+        }
+    }
+}
 /** Pintos main entry point. */
 int
 pintos_init (void)
@@ -134,6 +216,7 @@ pintos_init (void)
     run_actions (argv);
   } else {
     // TODO: no command line passed to kernel. Run interactively 
+    run_shell();
   }
 
   /* Finish up. */
