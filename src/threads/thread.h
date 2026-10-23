@@ -4,6 +4,8 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include "threads/synch.h"
 
 /** States in a thread's life cycle. */
 enum thread_status
@@ -99,12 +101,41 @@ struct thread
     int64_t wake_time;                  /* The tick count when this thread should wake up. */
 
 #ifdef USERPROG
-    /* Owned by userprog/process.c. */
-    uint32_t *pagedir;                  /**< Page directory. */
+struct child_process
+  {
+    tid_t tid;                          /**< Child's thread ID. */
+    int exit_status;                    /**< Child's exit status. */
+    bool exited;                        /**< True if child has terminated. */
+    bool waited_on;                     /**< True if parent has already waited. */
+    bool load_success;                  /**< True if binary loaded successfully. */
+    bool parent_alive;                  /**< True if parent thread is still alive. */
+    struct semaphore wait_sema;         /**< Semaphore for wait synchronization. */
+    struct semaphore load_sema;         /**< Semaphore for exec/load synchronization. */
+    struct list_elem elem;              /**< Element in parent's child_list. */
+  };
 #endif
 
     /* Owned by thread.c. */
     unsigned magic;                     /**< Detects stack overflow. */
+
+#ifdef USERPROG
+    /* Owned by userprog/process.c. */
+    uint32_t *pagedir;                  /**< Page directory. */
+
+    /* Process exit status. */
+    int exit_status;                    /**< Exit status code. */
+
+    /* Parent-child synchronization. */
+    struct child_process *cp;           /**< Pointer to this process's child_process record. */
+    struct list child_list;             /**< List of child_process structures. */
+
+    /* File descriptor table. */
+#define FD_MAX 128
+    struct file *fd_table[FD_MAX];      /**< Open file descriptors. */
+
+    /* Executable file (kept open to deny writes). */
+    struct file *executable;            /**< Running executable file. */
+#endif
   };
 
 /** If false (default), use round-robin scheduler.

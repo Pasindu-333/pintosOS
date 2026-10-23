@@ -4,6 +4,7 @@
 #include "userprog/gdt.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/vaddr.h"
 
 /** Number of page faults processed. */
 static long long page_fault_cnt;
@@ -148,9 +149,17 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  /* To implement virtual memory, delete the rest of the function
-     body, and replace it with code that brings in the page to
-     which fault_addr refers. */
+  /* If the fault came from user mode, or from kernel mode but due to
+     a bad user pointer passed into a syscall, terminate the process. */
+  if (user || !not_present || fault_addr < PHYS_BASE)
+    {
+      /* It is a user fault — kill the process cleanly. */
+      struct thread *cur = thread_current ();
+      cur->exit_status = -1;
+      thread_exit ();
+    }
+
+  /* Should not reach here in a correct kernel.  Panic. */
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
