@@ -3,6 +3,9 @@
 
 #include "threads/thread.h"
 
+typedef int pid_t;
+#define PID_ERROR ((pid_t) -1)
+
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);
 void process_exit (void);
